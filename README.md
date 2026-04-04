@@ -210,7 +210,7 @@ rfm['RFM_Score'] = rfm['R_Score'].astype(str) + rfm['F_Score'].astype(str) + rfm
 </details>
 
 ### SEGMENT DICTIONARY
-- SEGMENT DICTIONARY predefined customer segments based on business rules provided in sheet 2 of the dataset.
+- The SEGMENT DICTIONARY defines customer segments based on the business rules provided in Sheet 2 of the dataset.
 
 <details> <summary>Code Python</summary>
   
