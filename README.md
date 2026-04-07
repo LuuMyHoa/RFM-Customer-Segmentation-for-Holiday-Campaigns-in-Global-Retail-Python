@@ -103,10 +103,7 @@ Sheet 2: Segmentation mapping defines business rules for mapping RFM scores to c
 | Missing revenue metric | Create Revenue = Quantity × UnitPrice |
 | Undefined date range | Identify min/max InvoiceDate to define analysis period |
 
-<details> <summary>Code Python</summary>
-  
 ```python
-  
 df_clean = df.copy()
 
 # Remove duplicates
@@ -128,15 +125,10 @@ df_clean['CustomerID'] = df_clean['CustomerID'].astype(int)
 df_clean['Revenue'] = df_clean['Quantity'] * df_clean['UnitPrice']
 
 print(f" Raw data: {df.shape[0]:,} rows × {df.shape[1]} columns")
-
 print(f" After cleaning: {df_clean.shape[0]:,} rows ({df_clean.shape[0]/df.shape[0]*100:.1f}% retained)")
-
 print(f" Unique customers: {df_clean['CustomerID'].nunique():,}")
-
 print(f" Date range: {df_clean['InvoiceDate'].min().date()} → {df_clean['InvoiceDate'].max().date()}")
 ```
-
-</details>
 
 ### 📊 Data Summary
 
@@ -154,8 +146,6 @@ Date range: 2010-12-01 → 2011-12-09
 - Frequency is defined as the number of unique invoices (transactions) per customer
 - Monetary represents total revenue per customer (in GBP)
 
-<details> <summary>Code Python</summary>
-  
 ```python
 # Identify the most recent date in your data
 latest_date = df_clean['InvoiceDate'].max()
@@ -170,11 +160,9 @@ rfm = df_clean.groupby('CustomerID').agg(
     Monetary  = ('Revenue',     'sum')
 ).reset_index()
 
-print(f"\n📊 RFM Summary:")
+print(f"📊 RFM Summary:")
 print(rfm[['Recency','Frequency','Monetary']].describe().round(2).to_string())
 ```
-</details>
-
 ### 📊 RFM Summary
 
 |  | Recency | Frequency | Monetary |
@@ -194,8 +182,6 @@ print(rfm[['Recency','Frequency','Monetary']].describe().round(2).to_string())
 - Each metric is divided into 5 equal-sized groups using quintiles (qcut). This ensures a balanced distribution of customers across score levels
 - Recency is reversed (lower is better), while Frequency and Monetary are positively scored  
 - Ranking is applied before qcut to handle duplicate values and ensure stable binning
-
-<details> <summary>Code Python</summary>
   
 ```python 
 # Recency: smaller = more recent = BETTER → reverse labels
@@ -207,7 +193,6 @@ rfm['M_Score'] = pd.qcut(rfm['Monetary'].rank(method='first'), 5, labels=[1,2,3,
 
 rfm['RFM_Score'] = rfm['R_Score'].astype(str) + rfm['F_Score'].astype(str) + rfm['M_Score'].astype(str)
 ```
-</details>
 
 ### SEGMENT DICTIONARY
 - The SEGMENT DICTIONARY defines customer segments based on the business rules provided in Sheet 2 of the dataset.
@@ -234,7 +219,6 @@ segment_dict = {
 </details>
 
 ### MAPPING RFM SCORE AND SEGMENT
-<details> <summary>Code Python</summary>
   
 ```python 
 # Hàm gán segment dựa theo bảng
@@ -246,43 +230,86 @@ def assign_segment(rfm_code):
 
 # Áp dụng vào dataframe
 rfm['Segment'] = rfm['RFM_Score'].apply(assign_segment)
+rfm
+```
 
+| | CustomerID | Recency | Frequency | Monetary | R_Score | F_Score | M_Score | RFM_Score | Segment |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 | 12346 | 326 | 1 | 77183.60 | 1 | 1 | 5 | 115 | Cannot Lose Them |
+| 1 | 12347 | 2 | 7 | 4310.00 | 5 | 5 | 5 | 555 | Champions |
+| 2 | 12348 | 75 | 4 | 1797.24 | 2 | 4 | 4 | 244 | At Risk |
+| 3 | 12349 | 19 | 1 | 1757.55 | 4 | 1 | 4 | 414 | Promising |
+| 4 | 12350 | 310 | 1 | 334.40 | 1 | 1 | 2 | 112 | Lost Customers |
+| ... | ... | ... | ... | ... | ... | ... | ... | ... | ... |
+| 4333 | 18280 | 278 | 1 | 180.60 | 1 | 2 | 1 | 121 | Lost Customers |
+| 4334 | 18281 | 181 | 1 | 80.82 | 1 | 2 | 1 | 121 | Lost Customers |
+| 4335 | 18282 | 8 | 2 | 178.05 | 5 | 3 | 1 | 531 | Potential Loyalist |
+| 4336 | 18283 | 4 | 16 | 2045.53 | 5 | 5 | 4 | 554 | Champions |
+| 4337 | 18287 | 43 | 3 | 1837.28 | 3 | 4 | 4 | 344 | Loyal |
+
+4338 rows × 9 columns
+### 📊 Segment Distribution Summary
+
+<details> <summary>Code Python</summary>
+  
+```python
 seg_stats = (
     rfm.groupby('Segment')
     .agg(
-        Count       = ('CustomerID', 'count'),
+        Cus       = ('CustomerID', 'count'),
         Avg_Recency = ('Recency',    'mean'),
         Avg_Freq    = ('Frequency',  'mean'),
         Avg_Mon     = ('Monetary',   'mean'),
         Total_Rev   = ('Monetary',   'sum'),
     )
     .reset_index()
-    .sort_values('Count', ascending=False)
+    .sort_values('Cus', ascending=False)
     .reset_index(drop=True)
 )
 
-print(f"\n[7] Segment distribution:")
-print(seg_stats[['Segment','Count','Avg_Recency','Avg_Freq','Avg_Mon','Total_Rev']].round(2).to_string(index=False))
+# %_Cus và %_Rev
+seg_stats['%_Cus'] = (seg_stats['Cus'] / seg_stats['Cus'].sum()) * 100
+seg_stats['%_Rev'] = (seg_stats['Total_Rev'] / seg_stats['Total_Rev'].sum()) * 100
+
+cols = ['Segment','Cus','%_Cus','Avg_Recency','Avg_Freq','Avg_Mon','Total_Rev','%_Rev']
+seg_stats = seg_stats[cols]
+
+#Total
+total_row = {
+    'Segment': 'Total',
+    'Cus': seg_stats['Cus'].sum(),
+    '%_Cus': 100,
+    'Avg_Recency': seg_stats['Avg_Recency'].mean(), 
+    'Avg_Freq': seg_stats['Avg_Freq'].mean(),
+    'Avg_Mon': seg_stats['Avg_Mon'].mean(),
+    'Total_Rev': seg_stats['Total_Rev'].sum(),
+    '%_Rev': 100
+}
+
+#concat total 
+seg_stats_with_total = pd.concat([seg_stats, pd.DataFrame([total_row])], ignore_index=True)
+
+print(f"Segment distribution: ")
+print(seg_stats_with_total.round(2).to_string(index=False))
 ```
+
 </details>
 
-### 📊 Segment Distribution Summary
+| Segment | Cus | %_Cus | Avg_Recency | Avg_Freq | Avg_Mon | Total_Rev | %_Rev |
+|---|---|---|---|---|---|---|---|
+| Champions | 831 | 19.16 | 11.28 | 12.14 | 6716.97 | 5581802.32 | 62.81 |
+| Hibernating Customers | 697 | 16.07 | 148.82 | 1.56 | 409.71 | 285570.76 | 3.21 |
+| Lost Customers | 489 | 11.27 | 274.80 | 1.07 | 199.37 | 97491.54 | 1.10 |
+| Loyal | 427 | 9.84 | 36.35 | 5.34 | 2389.32 | 1020240.32 | 11.48 |
+| At Risk | 425 | 9.80 | 143.17 | 3.76 | 1776.45 | 754990.25 | 8.50 |
+| Potential Loyalist | 405 | 9.34 | 26.30 | 2.52 | 538.55 | 218114.26 | 2.45 |
+| Need Attention | 286 | 6.59 | 33.29 | 3.12 | 1630.18 | 466230.62 | 5.25 |
+| About To Sleep | 285 | 6.57 | 86.06 | 1.28 | 275.95 | 78644.84 | 0.88 |
+| New Customers | 267 | 6.15 | 28.22 | 1.07 | 222.28 | 59347.96 | 0.67 |
+| Promising | 133 | 3.07 | 25.08 | 1.33 | 895.49 | 119099.52 | 1.34 |
+| Cannot Lose Them | 93 | 2.14 | 236.61 | 2.34 | 2211.58 | 205676.50 | 2.31 |
+| Total | 4338 | 100.00 | 95.45 | 3.23 | 1569.62 | 8887208.89 | 100.00 |
 
-| Segment | Count | Avg_Recency | Avg_Freq | Avg_Mon | Total_Rev |
-|---|---|---|---|---|---|
-| Champions | 831 | 11.28 | 12.14 | 6,716.97 | 5,581,802.32 |
-| Hibernating Customers | 697 | 148.82 | 1.56 | 409.71 | 285,570.76 |
-| Lost Customers | 489 | 274.80 | 1.07 | 199.37 | 97,491.54 |
-| Loyal | 427 | 36.35 | 5.34 | 2,389.32 | 1,020,240.32 |
-| At Risk | 425 | 143.17 | 3.76 | 1,776.45 | 754,990.25 |
-| Potential Loyalist | 405 | 26.30 | 2.52 | 538.55 | 218,114.26 |
-| Need Attention | 286 | 33.29 | 3.12 | 1,630.18 | 466,230.62 |
-| About To Sleep | 285 | 86.06 | 1.28 | 275.95 | 78,644.84 |
-| New Customers | 267 | 28.22 | 1.07 | 222.28 | 59,347.96 |
-| Promising | 133 | 25.08 | 1.33 | 895.49 | 119,099.52 |
-| Cannot Lose Them | 93 | 236.61 | 2.34 | 2,211.58 | 205,676.50 |
-
-*This table summarizes customer distribution and average RFM metrics across segments.*
 
 ## 5. Visualization & Analysis
 
