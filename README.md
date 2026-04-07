@@ -1,5 +1,5 @@
 # RFM Customer Segmentation for Holiday Campaigns in Global Retail | Python
-  
+![Alt text](PICTURE/banner.png)
 Author: [LUU MY HOA]  
 Date: April 2026  
 Tools Used: Python  
@@ -312,7 +312,9 @@ print(seg_stats_with_total.round(2).to_string(index=False))
 
 
 ## 5. Visualization & Analysis
-
+![Alt text](PICTURE/value.png)
+![Alt text](PICTURE/barh.png)
+![Alt text](PICTURE/table.png)
 ## 6. Final Conclusion & Recommendations  
 
 👉🏻 Based on the insights and findings above, we would recommend the to consider the following:  
