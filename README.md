@@ -21,14 +21,12 @@ This project focuses on customer segmentation for a global company (SuperStore) 
 - The company mainly sells unique all-occasion gifts, with many customers being wholesalers
 - During the Christmas and New Year season, the Marketing team plans to run a “Thank You” campaign to appreciate customers who have supported the company over time
 - The Marketing team requested support from the Data Analytics team to segment customers
-- SuperStore already has an RFM-based segmentation mapping for customer classification
 
 ### ❓ Main Business Questions:
 - How are customers distributed across different RFM segments?
-- Which groups should be selected for the holiday “Thank You” campaign?
-- Which customer segments show potential to become loyal customers in the future?
-- How does customer behavior across segments differ between UK and international markets?
-
+- Which segments should be prioritized for the holiday “Thank You” campaign?
+- Where are the growth opportunities in the customer lifecycle?
+  
 ### 👤 Who is this project for?
 - Marketing Teams: Design targeted campaigns for different customer groups
 - Data & Business Analysts: Learn how to build an automated segmentation using Python
@@ -96,7 +94,7 @@ Sheet 2: Segmentation mapping defines business rules for mapping RFM scores to c
 |:--------|:-----------------------------|
 | Duplicate records | Remove exact duplicate rows to avoid double-counting |
 | InvoiceNo starts with 'C' | Remove canceled transactions (not actual purchases) |
-| Quantity <= 0 | Remove as these likely represent returns or invalid entries |
+| Quantity <= 0 | Removed to exclude returns and invalid transactions |
 | UnitPrice <= 0 | Remove to ensure valid revenue calculation |
 | Missing CustomerID | Remove, as RFM analysis requires customer-level identification |
 | CustomerID data type | Convert to integer for consistency |
@@ -141,10 +139,11 @@ Unique customers: 4,338
 Date range: 2010-12-01 → 2011-12-09
    
 ## 4. Apply RFM Model
-- REFERENCE_DATE is automatically calculated. REFERENCE_DATE is set to 1 day after the latest transaction date to ensure Recency is always ≥ 1
-- Recency is calculated as the number of days since the customer's last purchase relative to the REFERENCE_DATE. A smaller Recency value indicates a more recent and active customer
-- Frequency is defined as the number of unique invoices (transactions) per customer
-- Monetary represents total revenue per customer (in GBP)
+### 📌 RFM Calculation Logic
+- **REFERENCE_DATE** is automatically defined as **1 day after the latest transaction date** to ensure Recency ≥ 1
+- **Recency (R)** is calculated as the number of days since the customer's last purchase relative to the REFERENCE_DATE. A smaller Recency value indicates a more recent and active customer
+- **Frequency (F)** is defined as the number of unique invoices (transactions) per customer
+- **Monetary (M)** represents total revenue per customer (in GBP)
 
 ```python
 # Identify the most recent date in your data
@@ -230,9 +229,10 @@ def assign_segment(rfm_code):
 
 # Áp dụng vào dataframe
 rfm['Segment'] = rfm['RFM_Score'].apply(assign_segment)
-rfm
 ```
 
+<details> <summary>rfm</summary>
+  
 | | CustomerID | Recency | Frequency | Monetary | R_Score | F_Score | M_Score | RFM_Score | Segment |
 |---|---|---|---|---|---|---|---|---|---|
 | 0 | 12346 | 326 | 1 | 77183.60 | 1 | 1 | 5 | 115 | Cannot Lose Them |
@@ -248,6 +248,8 @@ rfm
 | 4337 | 18287 | 43 | 3 | 1837.28 | 3 | 4 | 4 | 344 | Loyal |
 
 4338 rows × 9 columns
+</details>
+
 ### 📊 Segment Distribution Summary
 
 <details> <summary>Code Python</summary>
@@ -312,15 +314,72 @@ print(seg_stats_with_total.round(2).to_string(index=False))
 
 
 ## 5. Visualization & Analysis
+### 5.1 Distribution and Box Plots of RFM variables
 ![Alt text](PICTURE/value.png)
+
+**Distribution**
+
+- Recency (R) is right-skewed: Median = 51 < Mean = 92 → Most customers purchased recently, but a large inactive group still exists
+- Frequency (F) is highly skewed: Median = 2, Mean = 4.3 → Majority of customers purchase only 1–2 times
+- Monetary (M) is extremely skewed: Median ≈ £669 vs Mean ≈ £2,048 → A few high-spending customers are significantly driving up the average
+
+**Outlier Detection**
+
+- Frequency outliers: customers with >200 transactions
+- Monetary outliers: customers spending >£250K
+→ These patterns strongly suggest the presence of wholesale / B2B customers
+
+👉 Insight: Customer distribution is highly skewed by wholesale outliers (Monetary and Frequency) and year-end seasonality (Recency)
+- Customer behavior is highly skewed across all RFM dimensions
+- Extreme Monetary and Frequency outliers suggest a distinct B2B segment
+- Recency distribution reflects strong seasonality (year-end concentration)
+  
+### 5.2 Customer Count Distribution and Revenue Contribution by Segment
 ![Alt text](PICTURE/barh.png)
+![Alt text](PICTURE/dual.png)
+- Largest segment: Champions (19.2%), contributes ~63% of total revenue
+- Mid-tier segments (Loyal, At Risk) contribute meaningful revenue (~19.6%)
+- Low-value segments (Hibernating, Lost) represent 27% of customers but contribute minimal revenue (~4%)
+
+👉 Insight: Revenue is highly concentrated in a small group of customers, business follows a clear Pareto pattern. Customer value is extremely uneven → segmentation is critical for resource allocation
+
+### 5. RFM Scores and Actual RFM Value by Segments 
 ![Alt text](PICTURE/table.png)
+- Champions: high across all RFM → core revenue drivers
+- At Risk & Cannot Lose Them: high past value but declining recency
+- Potential Loyalists: strong recency but low frequency → growth opportunity
+  
+👉 Insight: Different segments require distinct lifecycle strategies, not one-size-fits-all campaigns
+
 ## 6. Final Conclusion & Recommendations  
 
-👉🏻 Based on the insights and findings above, we would recommend the to consider the following:  
+### OBJECTIVE 1: Holiday Customer Appreciation Campaign (Christmas & New Year)
 
-📍 Key Takeaways:  
-✔️ Recommendation 1  
-✔️ Recommendation 2  
-✔️ Recommendation 3
+| Priority                     | Segment                   | Strategy           |
+|---|---|---|
+| 🔴 High (Revenue Protection) | Champions                 | Invest heavily in premium gifts & VIP experience. Focus on retention and relationship strengthening |
+| 🟡 Medium (Growth)           | Loyal, Potential Loyalist, Cannot Lose Them | Reinforce engagement and encourage repeat behavior |
+| 🟢 Low (Cost Control)        | Hibernating, Lost         | Use low-cost automated re-engagement      |
 
+### OBJECTIVE 2: Long-term Customer Strategy
+
+**1.Segmentation-based Strategy (Current State)**
+
+| Strategy | Target Segment | Key Actions | Business Goal |
+|----------|---------------|------------|---------------|
+| 🔴 Retention-first | Champions | Personalized engagement, VIP offers | Protect core revenue |
+| 🟠 Reactivation | At Risk, Cannot Lose Them | Win-back campaigns, targeted offers | Recover value |
+| 🟡 Growth pipeline | Potential Loyalists, Promising | Increase frequency, cross-sell | Drive future growth |
+| 🟢 Cost optimization | Hibernating, Lost | Automation, low-cost campaigns | Improve efficiency |
+
+While a unified RFM model is applied for campaign execution, customer behavior analysis indicates a clear distinction between wholesale (B2B) and retail (B2C) customers.
+
+**2. Strategic Improvement & Hypothesis Testing**
+
+While the above strategy provides a solid segmentation-based approach, it assumes a homogeneous customer base.
+
+However, analysis shows a clear distinction between wholesale (B2B) and retail (B2C) customers.
+
+- Recommendation: Future segmentation should separate B2B and B2C customers and apply RFM independently.
+
+- Expected outcome: Improved segmentation accuracy, more effective targeting, and higher marketing ROI.
