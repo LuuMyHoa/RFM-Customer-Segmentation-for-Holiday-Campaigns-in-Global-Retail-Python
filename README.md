@@ -374,18 +374,11 @@ print(seg_stats_with_total.round(2).to_string(index=False))
 
 While a unified RFM model is applied for campaign execution, customer behavior analysis indicates a clear distinction between wholesale (B2B) and retail (B2C) customers.
 
-**2. Strategic Improvement & Hypothesis Testing**
+**2. Strategic Improvement**
 
 While the above strategy provides a solid segmentation-based approach, it assumes a homogeneous customer base.
 
 However, analysis shows a clear distinction between wholesale (B2B) and retail (B2C) customers.
-
-**Hypothesis:** B2B customers exhibit significantly higher Monetary and Frequency values, which inflates overall distributions and distorts RFM scoring.
-
-**Business Impact:**
-- Retail customers may be undervalued or misclassified
-- High-value B2C customers risk being overlooked
-- Customer Strategy becomes less efficient and less personalized
 
 👉 **Recommendation:** Future segmentation should separate B2B and B2C customers and apply RFM independently.
 
