@@ -380,6 +380,16 @@ While the above strategy provides a solid segmentation-based approach, it assume
 
 However, analysis shows a clear distinction between wholesale (B2B) and retail (B2C) customers.
 
-- Recommendation: Future segmentation should separate B2B and B2C customers and apply RFM independently.
+**Hypothesis:** B2B customers exhibit significantly higher Monetary and Frequency values, which inflates overall distributions and distorts RFM scoring.
 
-- Expected outcome: Improved segmentation accuracy, more effective targeting, and higher marketing ROI.
+**Business Impact:**
+- Retail customers may be undervalued or misclassified
+- High-value B2C customers risk being overlooked
+- Customer Strategy becomes less efficient and less personalized
+
+👉 **Recommendation:** Future segmentation should separate B2B and B2C customers and apply RFM independently.
+
+👉 **Expected outcome:** 
+- More accurate customer valuation across segments
+- More precise and relevant targeting strategies
+- Improved efficiency in marketing spend and resource allocation
